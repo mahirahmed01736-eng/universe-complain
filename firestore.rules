@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function validText(s, maxLen) {
+      return s is string && s.size() > 0 && s.size() <= maxLen;
+    }
+
+    match /complaints/{postId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && validText(request.resource.data.title, 100)
+        && validText(request.resource.data.body, 2500)
+        && validText(request.resource.data.author, 35)
+        && validText(request.resource.data.category, 80)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt is int;
+      allow update, delete: if false;
+    }
+
+    match /chat/{messageId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && validText(request.resource.data.text, 500)
+        && validText(request.resource.data.name, 35)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt is int;
+      allow update, delete: if false;
+    }
+  }
+}
